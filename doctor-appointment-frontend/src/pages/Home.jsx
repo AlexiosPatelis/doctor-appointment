@@ -4,7 +4,7 @@
 // - InlineBookingModal shows “Login required” UI when no user, and blocks submit.
 
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";           // ⟵ used for redirect to /login
+import { useNavigate } from "react-router-dom";
 import { Calendar, Views, dateFnsLocalizer } from "react-big-calendar";
 import {
   format,
@@ -19,10 +19,10 @@ import {
 import { enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import api from "../api/axios";
-
-// ⟵ adjust the import path to your AuthContext hook
-// e.g. "../context/AuthContext" or "../state/auth"
 import { useAuth } from "../context/AuthContext";
+
+// Magic Bento layout
+import MagicBento, { BentoCard } from "../components/MagicBento";
 
 const locales = { "en-US": enUS };
 const localizer = dateFnsLocalizer({
@@ -97,16 +97,13 @@ export default function Home() {
   }, [range.from.getTime(), range.to.getTime()]);
 
   function onSelectEvent(evt) {
-    // Block past or non-available slots
     if (evt.isPast || evt.status !== "available") return;
 
-    // Enforce login: redirect to /login with a flash message
     if (!user) {
       navigate("/login", { state: { flash: "Please log in to book an appointment." } });
       return;
     }
 
-    // Logged-in user → open booking modal
     setSelected(evt);
     setModalOpen(true);
   }
@@ -130,25 +127,45 @@ export default function Home() {
 
   return (
     <div style={{ padding: 16 }}>
-      <h2 style={{ marginBottom: 12 }}>Calendar</h2>
+      <MagicBento>
+        <BentoCard col={4} row={3}>
+          <h2 style={{ margin: 0, marginBottom: 12 }}>Calendar</h2>
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            views={[Views.DAY, Views.WEEK, Views.MONTH]}
+            view={view}
+            onView={setView}
+            date={date}
+            onNavigate={setDate}
+            style={{ height: "calc(100% - 40px)", borderRadius: 8 }}
+            onSelectEvent={onSelectEvent}
+            eventPropGetter={eventPropGetter}
+          />
+        </BentoCard>
 
-      <Calendar
-        localizer={localizer}
-        events={events}
-        startAccessor="start"
-        endAccessor="end"
-        views={[Views.DAY, Views.WEEK, Views.MONTH]}
-        view={view}
-        onView={setView}
-        date={date}
-        onNavigate={setDate}
-        style={{ height: "75vh", border: "1px solid #eee", borderRadius: 8, background: "#fff" }}
-        onSelectEvent={onSelectEvent}
-        eventPropGetter={eventPropGetter}
-      />
+        <BentoCard col={2} row={1}>
+          <h3 style={{ marginTop: 0 }}>Legend</h3>
+          <Legend />
+        </BentoCard>
 
-      <Legend />
-      {loading && <p style={{ marginTop: 8 }}>Loading slots…</p>}
+        <BentoCard col={2} row={1}>
+          <h3 style={{ marginTop: 0 }}>Status</h3>
+          {loading ? <p>Loading slots…</p> : <p>Ready</p>}
+          <p style={{ marginTop: 8, opacity: 0.8 }}>Week view is default. Click a green slot to book.</p>
+        </BentoCard>
+
+        <BentoCard col={2} row={1}>
+          <h3 style={{ marginTop: 0 }}>Tips</h3>
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            <li>Login required to book</li>
+            <li>Past slots are disabled</li>
+            <li>Red means booked</li>
+          </ul>
+        </BentoCard>
+      </MagicBento>
 
       {modalOpen && selected && (
         <InlineBookingModal
@@ -158,7 +175,7 @@ export default function Home() {
             setSelected(null);
           }}
           onBooked={() => {
-            // IMPORTANT: refresh calendar but keep modal open so user can copy the code
+            // refresh calendar but keep modal open so user can copy the code
             loadSlots();
           }}
         />
@@ -184,7 +201,6 @@ function Legend() {
 }
 
 function InlineBookingModal({ slot, onClose, onBooked }) {
-  // Read user here too. If missing, show “Login required” UI.
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -199,7 +215,6 @@ function InlineBookingModal({ slot, onClose, onBooked }) {
   async function book() {
     setMsg("");
 
-    // Safety: block submission when not logged in
     if (!user) {
       navigate("/login", { state: { flash: "Login required to book." } });
       return;
@@ -217,7 +232,7 @@ function InlineBookingModal({ slot, onClose, onBooked }) {
       setRefCode(ref || "");
       setDone(true);
       setMsg(ref ? "Booked successfully." : "Booked successfully (no reference returned).");
-      onBooked?.(); // refresh calendar, but DO NOT close modal
+      onBooked?.();
     } catch (e) {
       const err = e.response?.data?.error || "Booking failed";
       setMsg(err);
@@ -266,13 +281,10 @@ function InlineBookingModal({ slot, onClose, onBooked }) {
           {slot.title} — {format(slot.start, "PPpp")} to {format(slot.end, "p")}
         </p>
 
-        {/* If not logged in, show a simple notice and controls */}
         {!user ? (
           <div style={{ display: "grid", gap: 10 }}>
             <strong>Login required</strong>
-            <p style={{ margin: 0, color: "#6b7280" }}>
-              You must log in to book this slot.
-            </p>
+            <p style={{ margin: 0, color: "#6b7280" }}>You must log in to book this slot.</p>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => navigate("/login", { state: { flash: "Please log in to book." } })}>
                 Go to Login

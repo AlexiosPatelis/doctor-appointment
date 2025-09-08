@@ -5,6 +5,7 @@ import Cancel from "./pages/Cancel";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import DebugPing from "./pages/DebugPing";
 import { useAuth } from "./context/AuthContext";
 
 function AdminGuard({ children }) {
@@ -31,6 +32,7 @@ export default function App() {
         />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/debug" element={<DebugPing />} />
       </Routes>
     </div>
   );

@@ -1,70 +1,74 @@
+// src/api/axios.js
 import axios from "axios";
 
-// Create axios instance with base URL from Vite env
-// `VITE_API_BASE` is set in your frontend .env file
+// Normalize base URL so δεν καταλήγει σε "/"
+function normalizeBase(url) {
+  const u = (url || "http://localhost:5000").trim();
+  return u.replace(/\/+$/, "");
+}
+
+const baseURL = normalizeBase(import.meta.env.VITE_API_BASE);
+
+// Δημιουργία axios instance
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || "http://localhost:5000",
-  withCredentials: true, // allow sending/receiving cookies (for auth)
-  timeout: 15000,        // 15s request timeout
+  baseURL,
+  withCredentials: true, // cookies για auth
+  timeout: 15000,
+  headers: { "Content-Type": "application/json" }
 });
 
-// Flags and queue to handle token refresh when multiple requests fail at once
+// ----------------------------------------------------
+// Global 401 handling με refresh-cookie queue
+// ----------------------------------------------------
 let isRefreshing = false;
 let queue = [];
 
-// Response interceptor: catch errors globally
 api.interceptors.response.use(
-  (res) => res, // if successful, just return response
+  (res) => res,
   async (error) => {
-    const original = error.config;
+    const original = error?.config;
 
-    // Skip retry if:
-    // - no server response
-    // - status is not 401
-    // - this request was already retried
-    // - the failing request is the refresh endpoint itself
+    // Αν δεν υπάρχει response ή δεν είναι 401 ή έχει ήδη γίνει retry ή είναι το ίδιο το refresh
     if (
-      !error.response ||
+      !error?.response ||
       error.response.status !== 401 ||
       original?._retry ||
-      original?.url?.includes("/auth/refresh")
+      (original?.url && original.url.includes("/auth/refresh"))
     ) {
       return Promise.reject(error);
     }
 
-    // If another refresh is already in progress, queue this request
+    // Αν υπάρχει άλλο refresh σε εξέλιξη, βάλε την κλήση σε queue
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         queue.push({ resolve, reject, original });
       });
     }
 
-    // Mark this request as retried
     original._retry = true;
     isRefreshing = true;
 
     try {
-      // Attempt to refresh auth cookie
+      // Προσπάθεια ανανέωσης session cookie
       await api.post("/auth/refresh");
 
-      // Replay queued requests
+      // Επανεκτέλεση κλήσεων στην ουρά
       queue.forEach(({ resolve, original: req }) => resolve(api(req)));
       queue = [];
 
-      // Retry the original failed request
+      // Retry της αρχικής κλήσης
       return api(original);
     } catch (err) {
-      // If refresh failed, reject all queued requests
+      // Αποτυχία refresh: απόρριψη όλων
       queue.forEach(({ reject }) => reject(err));
       queue = [];
 
-      // Force user to login again
-      if (window.location.pathname !== "/login") {
+      // Redirect σε login αν δεν είμαστε ήδη εκεί
+      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
         window.location.href = "/login";
       }
       return Promise.reject(err);
     } finally {
-      // Reset refresh flag
       isRefreshing = false;
     }
   }
