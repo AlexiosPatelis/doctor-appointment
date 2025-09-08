@@ -21,7 +21,7 @@ export default function Signup() {
     setBusy(true);
     try {
       // create account
-      await api.post("/auth/signup", {
+      await api.post("/auth/register", {
         username: form.username.trim(),
         password: form.password,
       });
