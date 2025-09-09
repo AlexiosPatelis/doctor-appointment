@@ -363,9 +363,9 @@ docker-compose up --build
  - for modern UI components
 
 ### **Admin Creation**
--Test that everything runs: docker ps
--If backend container is Up, then: docker exec -it doctor-backend sh
--Inside container run this script: node scripts/makeAdmin.js alexios alexios
+- Test that everything runs: docker ps
+- If backend container is Up, then: docker exec -it doctor-backend sh
+- Inside container run this script: node scripts/makeAdmin.js alexios alexios
 
 
 
