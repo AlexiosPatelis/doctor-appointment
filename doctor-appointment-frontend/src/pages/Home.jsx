@@ -109,9 +109,9 @@ export default function Home() {
   }
 
   function eventPropGetter(evt) {
-    let backgroundColor = "#22c55e"; // available
+    let backgroundColor = "#00e8b4"; // available
     if (evt.isPast) backgroundColor = "#d1d5db"; // past
-    else if (evt.status === "booked") backgroundColor = "#f87171"; // booked
+    else if (evt.status === "booked") backgroundColor = "#c74ae3"; // booked
     return {
       style: {
         backgroundColor,
@@ -193,8 +193,8 @@ function Legend() {
   );
   return (
     <div style={{ display: "flex", gap: 16, marginTop: 10 }}>
-      {item("#22c55e", "Available")}
-      {item("#f87171", "Booked")}
+      {item("#00e8b4", "Available")}
+      {item("#c74ae3", "Booked")}
       {item("#d1d5db", "Past")}
     </div>
   );

@@ -1,4 +1,3 @@
-// src/components/NavBar.jsx
 import React, { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -26,9 +25,9 @@ export default function NavBar() {
         position: "sticky",
         top: 0,
         zIndex: 40,
-        backdropFilter: "blur(10px)",
-        background: "linear-gradient(180deg, rgba(0,0,0,0.40), rgba(0,0,0,0.10))",
-        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        backdropFilter: "saturate(1)",
+        background: "#ffffff",
+        borderBottom: "1px solid var(--card-border)",
       }}
     >
       <div
@@ -53,11 +52,11 @@ export default function NavBar() {
               height: 28,
               borderRadius: 8,
               background:
-                "conic-gradient(from 220deg at 50% 50%, #7c8cff, #22c55e, #f59e0b, #7c8cff)",
-              filter: "saturate(1.1)",
+                "conic-gradient(from 220deg at 50% 50%, var(--brand-blue), var(--brand-green), var(--brand-purple), var(--brand-blue))",
+              filter: "saturate(1)",
             }}
           />
-          <span style={{ fontWeight: 700, letterSpacing: 0.2, color: "var(--text)" }}>
+          <span style={{ fontWeight: 700, letterSpacing: 0.2, color: "var(--brand-blue)" }}>
             DocApp
           </span>
         </Link>
@@ -115,8 +114,9 @@ export default function NavBar() {
             width: 40,
             height: 40,
             borderRadius: 10,
-            border: "1px solid rgba(255,255,255,0.12)",
-            background: "rgba(255,255,255,0.04)",
+            border: "1px solid var(--card-border)",
+            background: "#ffffff",
+            color: "var(--text)",
           }}
           className="__nav-toggle"
         >
@@ -130,9 +130,9 @@ export default function NavBar() {
       {open && (
         <div
           style={{
-            borderTop: "1px solid rgba(255,255,255,0.08)",
-            background: "rgba(0,0,0,0.55)",
-            backdropFilter: "blur(10px)",
+            borderTop: "1px solid var(--card-border)",
+            background: "#ffffff",
+            backdropFilter: "none",
           }}
           className="__nav-mobile"
         >
@@ -168,7 +168,6 @@ export default function NavBar() {
         </div>
       )}
 
-      {/* Simple responsive rule */}
       <style>{`
         @media (min-width: 900px) {
           .__nav-desktop { display: inline-flex !important; }
@@ -190,8 +189,8 @@ function NavItem({ to, label }) {
         textDecoration: "none",
         color: "var(--text)",
         fontWeight: 500,
-        background: isActive ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.10)",
+        background: isActive ? "rgba(0,116,255,0.08)" : "#ffffff",
+        border: `1px solid ${isActive ? "var(--brand-blue)" : "var(--card-border)"}`,
       })}
     >
       {label}
@@ -211,8 +210,8 @@ function NavMobileItem({ to, label, onClick }) {
         borderRadius: 10,
         color: "var(--text)",
         textDecoration: "none",
-        background: isActive ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: isActive ? "rgba(199,74,227,0.10)" : "#ffffff",
+        border: `1px solid ${isActive ? "var(--brand-purple)" : "var(--card-border)"}`,
       })}
     >
       {label}
@@ -228,9 +227,9 @@ function btn(variant = "ghost") {
       justifyContent: "center",
       padding: "8px 12px",
       borderRadius: 10,
-      background: "linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06))",
-      border: "1px solid rgba(255,255,255,0.16)",
-      color: "var(--text)",
+      background: "var(--brand-blue)",
+      border: "1px solid #0057c7",
+      color: "#ffffff",
       textDecoration: "none",
       fontWeight: 600,
     };
@@ -241,8 +240,8 @@ function btn(variant = "ghost") {
     justifyContent: "center",
     padding: "8px 12px",
     borderRadius: 10,
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.12)",
+    background: "#ffffff",
+    border: "1px solid var(--card-border)",
     color: "var(--text)",
     textDecoration: "none",
     fontWeight: 600,
