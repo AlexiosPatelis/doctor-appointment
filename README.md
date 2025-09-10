@@ -148,7 +148,7 @@ docker-compose up --build
 - Admin list/cancel: GET /appointments/all, DELETE /appointments/:id.
 
 ***Robustness: booking must be atomic (the slot must be “locked”).***
--Slot model with status: available | booked | cancelled.
+- Slot model with status: available | booked | cancelled.
 - Atomic update: findOneAndUpdate({ _id: slotId, status: 'available' }, { $set: { status: 'booked' } }). If it returns null, someone else has already taken it.
 - Alternatively, a unique index on (slotId, activeBooking) or use a session/transaction (Mongo replica set).
 
