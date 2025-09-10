@@ -11,12 +11,12 @@
 ---
 
 ## Features
-- Δημιουργία slots (admin only)
-- Εμφάνιση διαθέσιμων slots σε calendar view
-- Booking από ασθενή (με reference code)
-- Ακύρωση από ασθενή (με reference + contact)
-- Admin panel για διαχείριση slots/appointments
-- Authentication με ρόλους (patient / admin)
+- Creation of slots (admin only)
+- Display of available slots in calendar view
+- Booking by patient (with reference code)
+- Cancellation by patient (with reference + contact)
+- Admin panel for managing slots/appointments
+- Authentication with roles (patient / admin)
 
 ---
 
@@ -46,7 +46,7 @@
 
 ---
 
-## Local Development (χωρίς Docker)
+## Local Development (no Docker)
 
 ### 1. Clone το repo
 
@@ -55,23 +55,23 @@
 
 ### 2. Setup MongoDB
 
-Πρέπει να τρέχει MongoDB local (π.χ. mongodb://localhost:27017/doctor).
+MongoDB must run locally (e.g. mongodb://localhost:27017/doctor).
 
 ### 3. Backend
 
 - cd doctor-appointment-backend
-- cp .env.example .env   # αν υπάρχει, αλλιώς δημιούργησε .env με MONGO_URI, JWT_SECRET, PORT
+- cp .env.example .env   # if it exists, otherwise create .env με MONGO_URI, JWT_SECRET, PORT
 - npm install
 - npm run dev
-- Backend διαθέσιμο στο http://localhost:5000
+- Backend available at http://localhost:5000
 
 ### 4. Frontend
 
 - cd ../doctor-appointment-frontend
-- cp .env.example .env   # περιέχει VITE_API_BASE=http://localhost:5000
+- cp .env.example .env   # contains VITE_API_BASE=http://localhost:5000
 - npm install
 - npm run dev
-- Frontend διαθέσιμο στο http://localhost:5173
+- Frontend available at http://localhost:5173
 
 ##  Docker Deployment
 
@@ -86,11 +86,11 @@ docker-compose up --build
 
 # Admin User Creation
 
-## Για να δημιουργήσεις admin:
+## To create an admin:
 
 - cd doctor-appointment-backend
 - docker-compose exec backend node scripts/makeAdmin.js adminUsername adminPassword
-- Μετά μπορείς να κάνεις login στο frontend με αυτά τα credentials.
+- Then you can log in to the frontend with these credentials.
 
 ## Environment Variables
 *Backend (doctor-appointment-backend/.env)*
@@ -104,12 +104,12 @@ docker-compose up --build
 - VITE_API_BASE=http://localhost:5000
 
 ## Notes:
-- Οι patients δημιουργούνται μόνο μέσω /auth/register.
-- Μόνο admin μπορεί να δημιουργεί slots και να βλέπει όλα τα ραντεβού.
-- Οι ασθενείς χρειάζονται reference code + contact για να ακυρώσουν.
+- atients are created only through /auth/register.
+- Only admin can create slots and view all appointments.
+- Patients need reference code + contact to cancel.
 
 
-# **Aναλυτικά:**
+# **In detail:**
 
 ## *Tech Stack & Αρχιτεκτονική*
 
@@ -118,88 +118,91 @@ docker-compose up --build
 
 - Backend (Express, Mongoose, JWT, bcrypt, Helmet, CORS)
   
-- Express: Web framework για REST API. Ορίζει routes όπως /auth/*, /appointments/*, εφαρμόζει middleware (auth, error handling).
+- Express: Web framework for REST APIs. Defines routes like /auth/* and /appointments/*, and applies middleware (auth, error handling).
   
-- Mongoose: ODM για MongoDB. Ορίζει τα σχήματα/μοντέλα (π.χ. User, Slot, Appointment), validations, indexes και δίνει atomic operations (π.χ. findOneAndUpdate).
+- Mongoose: ODM for MongoDB. Defines schemas/models (e.g. User, Slot, Appointment), validations, indexes, and provides atomic operations (e.g. findOneAndUpdate).
   
-- JWT: Έκδοση και επαλήθευση tokens για authentication. Το token μπαίνει σε httpOnly cookie (προστασία από XSS) και χρησιμοποιείται από το middleware για να “δεί” τον χρήστη (req.user).
+- JWT: Issues and verifies tokens for authentication. Token is stored in an httpOnly cookie (protection from XSS) and used by middleware to populate req.user.
   
-- bcrypt: Hashing κωδικών χρηστών πριν αποθήκευση. Ποτέ plain-text passwords.
+- bcrypt: Hashes user passwords before storage. Never store plain-text passwords.
   
-- Helmet: Security headers (Content-Security-Policy, X-Frame-Options, κ.λπ.)—μειώνει επιφάνεια επίθεσης.
+- Helmet: Security headers (Content-Security-Policy, X-Frame-Options, etc.), reduces attack surface.
   
-- CORS: Επιτρέπει στο frontend origin (π.χ. http://localhost:8080) να μιλά με το backend, με credentials: true για να στέλνει το cookie.
+- CORS: Allows the frontend origin (e.g. http://localhost:8080)to communicate with the backend, with credentials: true to send the cookie.
 
-*Ρόλοι & Ροές*
+*Roles & Flows*
 
 - Users: patient (default) & admin.
 
 #### Auth flow:
-- POST /auth/login → αν τα credentials είναι σωστά, εκδίδεται JWT και μπαίνει σε httpOnly cookie.
-- GET /auth/me → ο server διαβάζει το JWT από το cookie, επιστρέφει { id, username, role }.
-- POST /auth/refresh → ανανέωση cookie αν το JWT είναι ακόμη έγκυρο/μη ληγμένο (ή λίγο πριν λήξει).
-- POST /auth/logout → καθαρίζει το cookie.
+- POST /auth/login → if the credentials are correct, a JWT is issued and stored in an httpOnly cookie.
+- GET /auth/me → the server reads the JWT from the cookie and returns { id, username, role }.
+-POST /auth/refresh → refreshes the cookie if the JWT is still valid/not expired (or about to expire).
+- POST /auth/logout → clears the cookie.
 
 #### Appointments:
 
-- Slots (admin): δημιουργία διαθέσιμων χρονικών παραθύρων (start/end/doctor/status).
-- Booking (patient): POST /appointments/book με slotId, στοιχεία ασθενή και προαιρετικό reason. Επιστρέφει reference code.
-- Cancel (public): POST /appointments/cancel με reference + contact.
+- Slots (admin): creation of available time windows (start/end/doctor/status).
+- Booking (patient): POST /appointments/book with slotId, patient details, and optional reason. Returns a reference code.
+- Cancel (public): POST /appointments/cancel with reference + contact.
 - Admin list/cancel: GET /appointments/all, DELETE /appointments/:id.
 
-***Στόχος robustness: το booking πρέπει να είναι atomic (να “κλειδώνει” το slot).***
-- Μοντέλο Slot με status available|booked|cancelled.
-- Atomic update: findOneAndUpdate({ _id: slotId, status: 'available' }, { $set: { status: 'booked' } }). Αν γυρίσει null, κάποιος άλλος το “πήρε”.
-- Εναλλακτικά, unique index σε (slotId, activeBooking) ή χρήση session/transaction (Mongo replica set).
+***Robustness: booking must be atomic (the slot must be “locked”).***
+-Slot model with status: available | booked | cancelled.
+- Atomic update: findOneAndUpdate({ _id: slotId, status: 'available' }, { $set: { status: 'booked' } }). If it returns null, someone else has already taken it.
+- Alternatively, a unique index on (slotId, activeBooking) or use a session/transaction (Mongo replica set).
 
-#### Ασφάλεια
+#### Security
 
-- Cookie ρυθμίσεις: σε παραγωγή secure: true και sameSite: 'none' (πίσω από HTTPS). Σε dev, secure: false, sameSite: 'lax'.
-- Περιορισμός CORS σε συγκεκριμένο origin (όχι *) και credentials: true.
-- Mongo auth: Στο dev είναι συχνά ανοιχτό (είδες το warning “Access control is not enabled”). Σε prod ενεργοποίησε root χρήστη και χρησιμοποίησε mongodb://user:pass@mongo:27017/doctor.
+- Cookie settings: in production use secure: true and sameSite: 'none' (behind HTTPS). In dev use secure: false and sameSite: 'lax'.
+- Restrict CORS to a specific origin (not *) and set credentials: true.
+- Mongo auth: In dev it is often open (you saw the warning “Access control is not enabled”). In prod enable a root user and use mongodb://user:pass@mongo:27017/doctor.
 
   
  ###  Frontend (React, Vite, React Router, React Big Calendar) (https://github.com/jquense/react-big-calendar)
-- React (Vite): SPA με γρήγορο dev server & build. Το Vite inject-άρει μεταβλητές από .env με prefix VITE_ (π.χ. VITE_API_BASE).
-- React Router: Client-side routing (σελίδες: Calendar /, Cancel /cancel, Admin /admin, Login/Signup).
-- React Big Calendar: Προβολές Day/Week/Month, events από τα slots του backend. Χρωματίζει:
-- Πράσινο: διαθέσιμο
-- Κόκκινο: κλεισμένο
-- Γκρι: παρελθόν
-- date-fns: Formatting/υπολογισμοί ημερομηνιών.
-- Axios: Κοινό instance με baseURL = VITE_API_BASE, withCredentials: true για cookies, response interceptor:
-- Αν πάρει 401, κάνει POST /auth/refresh. Έχει ουρά (queue) ώστε πολλά αιτήματα που αποτυγχάνουν ταυτόχρονα να περιμένουν ένα refresh.
+- React (Vite): SPA with fast dev server and build. Vite injects variables from .env with prefix VITE_ (e.g. VITE_API_BASE).
+- React Router: Client-side routing (pages: Calendar /, Cancel /cancel, Admin /admin, Login/Signup).
+- React Big Calendar: Day/Week/Month views, events from backend slots. Colors:
+- Green: available
+- lilac: booked
+- Gray: past
+- date-fns: Date formatting/calculations.
+- Axios: Shared instance with baseURL = VITE_API_BASE, withCredentials: true for cookies, response interceptor:
+- On 401, POST /auth/refresh. Uses a queue so concurrent failed requests wait for one refresh.
 
 #### *Frontend state & UX*
 
-- AuthContext: Κρατά τρέχοντα χρήστη (role) και χειρίζεται login/logout/me/refresh.
-- Home: Φορτώνει slots στη range του calendar. On click διαθέσιμου slot → InlineBookingModal:
-- Στέλνει POST /appointments/book, εμφανίζει reference code και παρέχει copy + deep link στη σελίδα cancel.
-- Cancel: Φόρμα με reference + contact. Δείχνει επιτυχία/σφάλμα.
-- Admin: Προσθήκη slots, λίστα/ακύρωση ραντεβού, refresh.
-
+- AuthContext: Stores current user (role) and handles login/logout/me/refresh.
+- Home: Loads slots for the calendar range. On click of an available slot → InlineBookingModal:
+- Sends POST /appointments/book, shows reference code, and provides copy + deep link to cancel page.
+- Cancel: Form with reference + contact. Shows success/error.
+- Admin: Add slots, list/cancel appointments, refresh.
+- 
 ### Database (MongoDB)
 
 #### *Collections:*
 - users: { username, passwordHash, role }
-- slots: { start, end, doctor, status } με indexes σε { start, end, status } για γρήγορο εύρος ημερομηνιών.
-- appointments: { slotId, patientName, contact, reference, status } με index στο reference.
+- slots: { start, end, doctor, status } with indexes on { start, end, status } for fast date-range queries.
+- appointments: { slotId, patientName, contact, reference, status } with index on reference.
 
 ### Containerization (Docker + Docker Compose)
 
 #### 3 services:
 
-- mongo: με volume mongo_data στο /data/db.
-- backend: Node/Express, διαβάζει .env (π.χ. MONGO_URI=mongodb://mongo:27017/doctor).
-- frontend: Build React → serve με nginx. Το VITE_API_BASE δίνεται στο build time μέσω build.args.
+- mongo: with volume mongo_data at /data/db.
+- backend: Node/Express, reads .env (e.g. MONGO_URI=mongodb://mongo:27017/doctor).
+- frontend: Build React → serve with nginx. VITE_API_BASE passed at build time via build.args.
 
 #### Networking:
 
-- Όλα τα services είναι στο ίδιο Docker network → μπορούν να μιλάνε με DNS name mongo, backend.
-- Tο frontend μιλά απευθείας στο backend μέσω http://localhost:5000 (εξωτερικό port mapping) H εναλλακτικά Nginx proxy σε /api/* → http://backend:5000 για ένα origin (frontend+api στο 8080), οπότε δεν χρειάζεται CORS.
+- All services are on the same Docker network → they can communicate using DNS names like mongo, backend.
+- Frontend talks directly to backend via http://localhost:5000
+ (external port mapping)
+- Alternatively, Nginx proxies /api/* → http://backend:5000
+ so frontend+API share origin on 8080, removing the need for CORS.
 
-# Αρχιτεκτονικό Διάγραμμα (2 κοινές παραλλαγές)
-## A) χωρίς proxy
+# Architectural Diagram (2 common variants)
+## A) without proxy
 [Browser]
    |  http://localhost:8080
    v
@@ -210,9 +213,9 @@ docker-compose up --build
 [Express API (backend)] --(Mongoose)--> [MongoDB]
 
 
-- Pro: πιο απλό.
-- Con: CORS απαραίτητο (δύο origins: 8080 & 5000).
-
+- Pro: simple
+- Con: CORS required (two origins: 8080 & 5000).
+  
 ## B) Με Nginx reverse-proxy (/api → backend)
 [Browser]
    |  http://localhost:8080
@@ -225,40 +228,39 @@ docker-compose up --build
                   \--(Mongoose)--> [MongoDB]
 
 
-- Pro: ένα origin (8080). Πιο “καθαρό” σε prod, χωρίς CORS.
-- Con: Θέλει σωστό nginx.conf + στο build VITE_API_BASE=/api.
+- Pro: single origin (8080). Cleaner in production, no CORS.
+- Con: requires correct nginx.conf + in build set VITE_API_BASE=/api.
 
-## Ροές χρήσης (sequence)
+## User flows (sequence)
 ### Login
 
-- Frontend → POST /auth/login (axios με withCredentials).
-- Backend εκδίδει JWT, το βάζει σε httpOnly cookie.
-- Frontend κάνει GET /auth/me για να πάρει { username, role } και να ρυθμίσει UI (π.χ. εμφάνιση Admin menu).
+- Frontend → POST /auth/login (axios with withCredentials).
+- Backend issues a JWT and sets it in an httpOnly cookie.
+- Frontend does GET /auth/me to get { username, role } and configure the UI (e.g., show the Admin menu).
 
 ### Booking
-- Χρήστης επιλέγει διαθέσιμο slot → ανοίγει modal.
-- POST /appointments/book με slotId, στοιχεία ασθενή.
-- Backend κάνει atomic update στο slot → δημιουργεί appointment → επιστρέφει reference code.
-- Frontend εμφανίζει code + κουμπί Copy + link για /cancel.
+- User selects an available slot → opens a modal.
+- POST /appointments/book with slotId and patient details.
+- Backend performs an atomic update on the slot → creates the appointment → returns a reference code.
+- Frontend shows the code + Copy button + link to /cancel.
 
 ### Cancel
-- Χρήστης βάζει reference + contact.
+- User provides reference + contact.
 - POST /appointments/cancel.
-- Αν ταιριάζει → ακυρώνει appointment και “ελευθερώνει”/μαρκάρει το slot ανάλογα με στρατηγική σου.
-
+- If it matches → cancels the appointment and frees/marks the slot according to your strategy.
 ---
 
-### Aν θελήσεις να τρέξεις το project:
+### If you want to run the project:
 
 1. `git clone`  
 2. `docker-compose up --build`  
-3. Άνοιξε το **http://localhost:8080** (frontend)  
+3. OPEN **http://localhost:8080** (frontend)  
 4. Backend → http://localhost:5000, DB → http://localhost:27017  
 
 ---
 
 
-### Εντολές για Update στο GitHub
+### Commands FOR Update στο GitHub
 
 - repo https://github.com/AlexiosPatelis/doctor-appointment:
 
@@ -267,13 +269,13 @@ docker-compose up --build
 
 - git status
 
-*Πρόσθεσε όλα τα νέα/αλλαγμένα αρχεία*
+*Add all new/modified files.*
 - git add .
 
-*Κάνε commit με περιγραφή*
+*Make a commit with a description.*
 - git commit -m "Update backend/frontend with Docker setup, Magic Bento UI"
 
-*Στείλε τα commits στο GitHub*
+*Send the commits to GitHub.*
 - it push origin main
 
 
